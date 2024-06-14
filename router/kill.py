@@ -6,9 +6,9 @@ class KillProcess:
 
     def kill(self, pids):
         if len(pids) > 0:
-            print("\033[1;32m" + "Kill Process Detected... Starting" + "\033[0m")
+            print("\033[1;32m" + "INFO" + "\033[0m" + ":" + "\033[1;32m" + "     Kill Process Detected... Starting" + "\033[0m")
         else:
-            print("\033[1;32m" + "Kill Process Non-Detected... Finishing" + "\033[0m")
+            print("\033[1;32m" + "INFO" + "\033[0m" + ":" + "\033[1;32m" + "     Kill Process Non-Detected... Finishing" + "\033[0m")
             return False
         pid = ""
         for pid_id in pids:
@@ -16,7 +16,7 @@ class KillProcess:
             pid += str(pid_id) + ", "
             process = subprocess.Popen(kill_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             stdout, stderr = process.communicate()
-        print("\033[1;32m" + "Killing Process Successfully Finished ---> " + "\033[0m" + "\033[1;31m" + f"[{pid[:len(pid) - 2]}]" + "\033[0m")
+        print("\033[1;32m" + "INFO" + "\033[0m" + ":" + "\033[1;32m" + "     Killing Process Successfully Finished ---> " + "\033[0m" + "\033[1;31m" + f"[{pid[:len(pid) - 2]}]" + "\033[0m")
 
     def extract_pid_from_line(self, line) -> int:
         fields = str(line).split()

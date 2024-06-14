@@ -5,6 +5,14 @@ import shutil
 import json
 import threading
 import torch
+from tqdm import tqdm
+
+total_steps = 100
+progress_bar = tqdm(total=total_steps)
+
+def update_progress_bar(progress_bar, percentage):
+    steps_to_add = (total_steps * percentage) / 100
+    progress_bar.update(steps_to_add)
 
 class CompareSimilaity:
     def __init__(self) -> str:
@@ -17,18 +25,24 @@ class CompareSimilaity:
             os.makedirs(cache_folder)
         if os.path.exists(model_cache_path):
             shutil.rmtree(model_cache_path)
+        # print("\033[1;32m" + "INFO" + "\033[0m" + ":" + "     Loading module Started")
+        update_progress_bar(progress_bar, 50)
         self.model = SentenceTransformer(model_name, cache_folder=cache_folder) # 모델 선언
-        self.sentences = []
+        # print("\033[1;32m" + "INFO" + "\033[0m" + ":" + "     Loading module Completed")
+        update_progress_bar(progress_bar, 50)
+        progress_bar.close()
         self.datas = []
         self.comparison = []
-        self.comparison_float = []
-        self.comparison_data = []
+        self.dataset_data = []
+        self.dataset_float = []
+        self.ifdatasetedit = []
         if torch.backends.mps.is_available(): # GPU 사용 가능여부 검사
             self.device = torch.device("mps") # 가능한 경우, 설정
-            print("MPS device is available. Using GPU.")
+            # print("MPS device is available. Using GPU.")
         else:
             self.device = torch.device("cpu")
-            print("MPS device is not available. Using CPU.")
+            # print("MPS device is not available. Using CPU.")
+        print("\033[1;32m" + "INFO" + "\033[0m" + ":" + "     Loading fully Completed")
     
     def check_if_data(self):
         with open('./log/server.log', 'r') as r:
@@ -47,66 +61,97 @@ class CompareSimilaity:
         similarity = util.pytorch_cos_sim(embeddings[0], embeddings[1]) # 데이터 유사도 검사
         end_time = time.time() # 타이머 종료
         embedded_time = end_time - start_time # 시간 측정
-        print(f"Test similarity: {similarity.item()}") # 유사도 출력
-        print("Embedding test data time: %0.2f seconds" % embedded_time) # 소요 시간 출력
+        # print(f"Test similarity: {similarity.item()}") # 유사도 출력
+        print("\033[1;32m" + "INFO" + "\033[0m" + ":" + f"     Airing time: {str(embedded_time)[:4]} seconds")
     
     def getdata(self, threadnum): # threadnum으로 매개변수로써 함수 선언
         with open('./conversation.json', 'r') as r: # 예시 conversation data 열기
             data = json.load(r) # json 데이터로 변환
             data_keys = list(data.keys()) # key값 즉, 질문을 list화
-            self.data_key_datas = data_keys # self. 로써 인스턴스 변수 선언
-            self.data_values = list(data.values()) # values 값, 질문에 대한 답변을 list화 후, 인스턴스 변수 선언. 
+            data_key_datas = data_keys # self. 로써 인스턴스 변수 선언
+            data_values = list(data.values()) # values 값, 질문에 대한 답변을 list화 후, 인스턴스 변수 선언. 
             # print(data_keys)
             # print(data_values)
             length = len(data_keys) # 데이터의 개수의 길이를 length 변수에 저장
             tenth = length // threadnum
-            self.data_keys_list = [data_keys[i*tenth:(i+1)*tenth] for i in range(threadnum)] 
+            data_keys_list = [data_keys[i*tenth:(i+1)*tenth] for i in range(threadnum)] 
+        return data_key_datas, data_values, data_keys_list
             # 지정한 thread 개수로 1차 배열 내부의 2차 배열로써 데이터를 나누어 넣어준 데이터를 data_keys_list에 인스턴스 변수로써 저장하기
 
-    def thread(self, ques):
+    def thread(self, ques, data_keys_list):
         # print(self.data_keys_list) # 위에서 인스턴스 변수 thread 개수로 나누어 저장한 data_keys_list를 출력
-        threads = [threading.Thread(target=self.compare, args=(data_keys, ques, )) for data_keys in self.data_keys_list] # compare 함수에 
+        threads = [threading.Thread(target=self.compare, args=(data_keys, ques, )) for data_keys in data_keys_list] # compare 함수에 
         # 1차 배열 내부에 존재하는 2차 배열의 개수를 기준으로 그 개수 만큼 thread를 생성후, thread 배열에 저장.
         [thread.start() for thread in threads] # 생성된 thread 개수 만큼 start
         [thread.join() for thread in threads] # 모든 thread가 끝날때까지 기다렸다가 join 하기
-    
+        print("-------------------------------------------------------------------------------------------------------------------------------------------------------------")
+        print(self.dataset_data)
+        print(self.dataset_float)
+        print("-------------------------------------------------------------------------------------------------------------------------------------------------------------")
+        
     def compare(self, data_keys, ques):
         temporary_data = []
+        comparison_float = []
+        comparison_data = []
         for data_key in range(len(data_keys)): # 인수로 받은 2차 배열의 len 만큼 for문 돌리기
-            self.sentences = [] # 인스턴스 변수로써 sentence 배열 선언해주기.
+            # print(data_keys[data_key])
+            sentences = [] # 인스턴스 변수로써 sentence 배열 선언해주기.
             # print(f"testing data: {data_keys[data_key]}") # 2차원 배열에 있는 testing data 1번 ~ 인덱스 출력
             # print(f"testing target: {ques}") # 질문 출력
-            self.sentences.extend([data_keys[data_key], str(ques)]) # 위에서 선언한 sentence 배열에 비교 배열 extend하기
+            sentences.extend([data_keys[data_key], str(ques)]) # 위에서 선언한 sentence 배열에 비교 배열 extend하기
             start_time = time.time() # 타이머 시작
-            embeddings = self.model.encode(self.sentences, convert_to_tensor=True, device=self.device) # 모델 호출
+            embeddings = self.model.encode(sentences, convert_to_tensor=True, device=self.device) # 모델 호출
             similarity = util.pytorch_cos_sim(embeddings[0], embeddings[1]) # 유사도 비교하기
             # print(f"Similarity: {similarity.item()}") # 유사도 출력
-            self.comparison_float.append(float(similarity.item())) # 유사도를 위에서 선언한 비교_소수 배열에 append하기
-            self.comparison_data.append(data_keys[data_key]) # 유사도를 위에서 선언한 비교_데이터 배열에 append하기
+            comparison_float.append(float(similarity.item())) # 유사도를 위에서 선언한 비교_소수 배열에 append하기
+            comparison_data.append(data_keys[data_key]) # 유사도를 위에서 선언한 비교_데이터 배열에 append하기
             end_time = time.time() # 타이머 끄기
             embedded_time = end_time - start_time # 소요 시간 재기
             # print("Embedding time: %0.2f seconds" % embedded_time) # 소요 시간 출력
             self.datas.append("%0.2f" % embedded_time) # 소요시간 append하기
             temporary_data.append(float(similarity.item())) # 소요시간 append하기
             number = 0 # number 변수 선언
-        if float(max(temporary_data)) < 0.7:
-            print(temporary_data)
-            print("You must modify your dataset.")
+        if float(max(temporary_data)) < 0.6:
+            self.ifdatasetedit.append(True)
         else:
-            print(temporary_data)
+            self.ifdatasetedit.append(False)
         for data in range(len(self.datas)): # 위에서 for문을 통해 나온 소요 시간을 배열에 append한 배열의 길이 만큼 
             number += float(self.datas[data]) # number 변수에 += 하기
         aver_embedded = number / len(self.datas) # 평균 구하기
         # print("\033[32m" + "평균 답변 속도: %0.2f" % aver_embedded  + "\033[0m") # 소요 시간의 평균 출력하기
+        self.dataset_data.append(comparison_data)
+        self.dataset_float.append(comparison_float)
 
-    def __display__(self, question):
-        self.comparison.append(self.comparison_float) # 위에서 저장한 유사도 값을 인덱스 0번에 저장
-        self.comparison.append(self.comparison_data) # 위에서 저장한 유사도 값을 인덱스 1번에 저장
-        max_index = max(enumerate(self.comparison[0]), key=lambda x: x[1])[0] # comparision 배열에 저장된 유사도 값중 가장 큰 값을 추출후 인덱스값을 변수에 저장
-        predict_key = self.comparison[1][max_index] # 가장 유사도 높은 값에 대한 답변 인덱스을 predict_key를 변수에 저장
-        for key in range(len(self.data_key_datas)): # data_key_datas 배열을 순회하면서, 
-            if self.data_key_datas[key] == predict_key: # 데이터를 찾기
-                predict_value = self.data_values[key] # predict value에 답변을 저장하기
+    def selecting_max(self):
+        def check_index(final_values, max_element):
+            for final_value in range(len(final_values)):
+                for array_data in range(len(final_values[final_value])):
+                    if max_element == final_values[final_value][array_data]:
+                        return f"{final_value} {array_data}"
+            return None
+        check_amount_thread = len(self.dataset_float)
+        temporary = []
+        for j in range(check_amount_thread):
+            first_final_value = max(self.dataset_float[j])
+            temporary.append(first_final_value)
+        final_value = max(temporary)
+        index = check_index(self.dataset_float, final_value)
+        demension_one, demension_two = index.split(" ")
+        result = self.dataset_data[int(demension_one)][int(demension_two)]
+        return result
+        
+    def __display__(self, question, data_key_datas, data_values):
+        def check_dataset():
+            for amount in range(len(self.ifdatasetedit)):
+                if self.ifdatasetedit[amount] == False:
+                    return None
+            print(self.dataset_float)
+            print("You must modify your dataset.")
+        predict_key = self.selecting_max()
+        check_dataset()
+        for key in range(len(data_key_datas)): # data_key_datas 배열을 순회하면서, 
+            if data_key_datas[key] == predict_key: # 데이터를 찾기
+                predict_value = data_values[key] # predict value에 답변을 저장하기
                 return predict_key, predict_value, question # 질문에 대한 index 값, 질문, 본래 질문, 질문에 대한 답을 return
 
 class RunManage: # 선언
@@ -117,21 +162,23 @@ class RunManage: # 선언
         self.speedometer = []
         self.cpu_usage = []
         self.thread_counts = []
+        self.compare.delay_blocker()
 
     def run(self, data):
         # 호출 # 메뉴가 뭐가 있을까요?, 아메리카노 한 잔과 블루베리 치즈케이크 먹고 싶어요, 포장할게요
-        self.compare.delay_blocker() # 함수 호출
         # input("Enter to start") # Enter Key 입력 기다리기
         question = data
         start_time = time.time() # 타이머 셋
-        self.compare.getdata(self.thread) # 지정한 thread 개수 매개변수로 getdata 함수 호출
-        self.compare.thread(question) # 위에서 인스턴스로써 저장해준 변수를 활용하여 thread 함수 호출
+        data_key_datas, data_values, data_keys_list = self.compare.getdata(self.thread) # 지정한 thread 개수 매개변수로 getdata 함수 호출
+        self.compare.thread(question, data_keys_list) # 위에서 인스턴스로써 저장해준 변수를 활용하여 thread 함수 호출
         end_time = time.time() # 타이머 종료
-        predict_key, predict_value, ques = self.compare.__display__(question) # __display__ 호출
-        print(ques)
+        predict_key, predict_value, ques = self.compare.__display__(question, data_key_datas, data_values) # __display__ 호출
+        print("사용자의 질문: " + ques)
+        print("답변: " + predict_value)
+        self.compare.dataset_data = []
+        self.compare.dataset_float = []
         return end_time - start_time, ques, predict_key, predict_value
         # 1. embedded_time, 2. general question, 3. analyzed question, 4. analyzed response
-
 
 '''
 다른 아이디어가 생각이 났어. -> 기본 데이터 베이스에 기본적인 스크립트를 모두 저장해두고
