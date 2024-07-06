@@ -1,20 +1,14 @@
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from router.aianalyze import RunManage
+from router.aianalyze import SentenceCompare
 from router.connection import thread_read_token
 from router.kill import KillProcess
+import os
 
 app = FastAPI()
-run = RunManage(thread=7) # This must not exceed the json data amounts also json data must divided by amount of thread
-
-def __init__array():
-    run.compare.datas = []
-    run.compare.comparison = []
-    run.speed_datas = []
-    run.speedometer = []
-    run.cpu_usage = []
-    run.thread_counts = []
+run = SentenceCompare() # This must not exceed the json data amounts also json data must divided by amount of thread
+run.Airing()
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,9 +32,10 @@ def get_api_key(request: Request):
 
 @app.get("/api")
 async def read_root(api_key: str = Depends(get_api_key), ques: str = None):
-    embedded_time, general_ques, anal_ques, anal_res = run.run(ques)
-    __init__array()
-    return {"message": f"{anal_res}"}
+    predicted_Q, predicted_A, embedded_time = run.run(ques)
+    if predicted_A == False:
+        os._exit(0)
+    return {"message": f"{predicted_A}"}
 
 if __name__ == "__main__":
     killer = KillProcess()
