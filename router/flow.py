@@ -6,7 +6,7 @@ class FlowFlagStore:
         self.flag_connection_sentences = []
 
     def flag_handler(self, original_predicted_sentence):
-        with open('conversation.json', 'r') as file:
+        with open('conversation.json', 'r', encoding='utf-8') as file:
             unfiltered_sentences = json.load(file)
         for unfiltered_index, unfiltered_val in enumerate(unfiltered_sentences):
             if original_predicted_sentence in unfiltered_val:

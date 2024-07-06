@@ -1,13 +1,15 @@
 from sentence_transformers import SentenceTransformer, util
+import sys
+import os
+from auto.clear_terminal import clear_terminal
 from .flow import FlowFlagStore
 import json
 import time
 from tqdm import tqdm
 import random
 import threading
-import os
 import itertools
-import sys
+
 
 class LoadingIndicator:
     def __init__(self, message="\033[1;32mINFO\033[0m:     Dataset Loading Starting"):
@@ -41,7 +43,7 @@ class SentenceCompare:
         self.sentences_A = []
         self.flag = FlowFlagStore()
         self.model = SentenceTransformer(model_name, cache_folder=self.cache_folder)
-        with open('conversation.json', 'r') as file:
+        with open('conversation.json', 'r', encoding='utf-8') as file:
             unfiltered_sentences = json.load(file)
             for unfiltered_sentences_index, unfiltered_sentences_val in enumerate(unfiltered_sentences):
                 self.sentences.append(str(unfiltered_sentences_val).split(' | ')[0])
@@ -64,7 +66,7 @@ class SentenceCompare:
             Airing_start = time.time()
             compare_embedded_time = [] # time average calculation array
             random_data  = [] # quality test data array
-            with open('airing_data.json', 'r') as file:
+            with open('airing_data.json', 'r', encoding='utf-8') as file:
                 quality_check_data = json.load(file)
                 for _ in range(5):
                     random_data.append(quality_check_data[random.randint(0, 149)])
@@ -97,7 +99,7 @@ class SentenceCompare:
         while True:
             Airing_start = time.time()
             compare_embedded_time = [] # time average calculation array
-            with open('conversation.json', 'r') as file:
+            with open('conversation.json', 'r', encoding='utf-8') as file:
                 quality_check_data = json.load(file)
             returning = self.quality_check_detail_main(quality_check_data, compare_embedded_time)
             if returning == True:
@@ -157,7 +159,7 @@ class SentenceCompare:
     def Airing(self):
         self.quality_check() # Random Data Airing
         self.quality_check_main() # Real Data Airing
-        os.system("clear")
+        os.system(clear_terminal())
             
     def run(self, ques):
         predicted_Q, predicted_A, embedded_time = self.process(ques)
