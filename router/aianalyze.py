@@ -130,7 +130,7 @@ class SentenceCompare:
         
     def compare(self, similarities_list):
         max_val = max(similarities_list)
-        index_max_val = similarities_list.index(max_val)
+        index_max_val = list(similarities_list).index(max_val)
         print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Predicted Script data '{self.sentences[index_max_val]}'")
         print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{self.sentences_A[index_max_val]}'")
         # print(similarities_list)
@@ -145,7 +145,7 @@ class SentenceCompare:
         # import pdb
         # pdb.set_trace()
         predicted_Q, predicted_A = self.compare(similarities_list)
-        modified_A = self.flag.flag_handler(predicted_Q)
+        modified_A = self.flag.flag_handler(predicted_Q, predicted_A)
         if modified_A == 0:
             pass
         elif modified_A == -1:
