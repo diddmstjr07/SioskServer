@@ -37,6 +37,11 @@ async def read_root(api_key: str = Depends(get_api_key), ques: str = None):
         os._exit(0)
     return {"message": f"{predicted_A}"}
 
+@app.get("/access")
+async def read_root(api_key: str = Depends(get_api_key), host: str = None, ip: str = None):
+    print("\033[1;32m" + "INFO" + "\033[0m" + ":" + f"     Client Connected from {host} -> {ip}")
+    return {"message": True}
+
 if __name__ == "__main__":
     killer = KillProcess()
     killer.killing()
