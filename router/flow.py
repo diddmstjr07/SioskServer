@@ -1,4 +1,5 @@
 import json
+import random
 
 """
 지금든 생각인데, flag 별로 말할수 있는 비교군을 만들어서 데이터를 aianalyze.py에 넣어둘까? 
@@ -115,8 +116,8 @@ class FlowFlagStore:
         elif result == 0:
             return 0
         elif result == 3: 
-            self.beverage_kind_flag_3(original_predicted_sentence) 
-            return 0
+            beverage_result = self.beverage_kind_flag_3(original_predicted_sentence) 
+            return beverage_result
         elif result == 4: 
             self.beverage_amount_flag_4(original_predicted_sentence) 
             return 0
@@ -134,8 +135,51 @@ class FlowFlagStore:
             return return_sentence # 이것들은 서버로 return
         
     def beverage_kind_flag_3(self, original_predicted_sentence: str) -> None: # This function can be entered only flag val is '6'
-        beverage_kind_str = original_predicted_sentence.split(' 줄래?')[0]
-        self.beverage_kind.append(beverage_kind_str)
+        data = [
+            "아메리카노",
+            "연유라테",
+            "카푸치노",
+            "헤이즐넛라테",
+            "헤이즐넛아메리카노",
+            "콜드브루라테",
+            "콜드브루",
+            "카라멜마키아또",
+            "카페모카",
+            "민트프라페",
+            "녹차프라페",
+            "유니콘프라페",
+            "바나나퐁크러쉬",
+            "초콜릿허니퐁크러쉬",
+            "슈크림허니퐁크러쉬",
+            "플래인퐁크러쉬",
+            "딸기퐁크러쉬",
+            "딸기쿠키프라페",
+            "망고요거트스무디",
+            "플래인요거트스무디",
+            "딸기요거트스무디",
+            "블루레몬에이드",
+            "체리콕",
+            "자몽에이드",
+            "레몬에이드",
+            "라임모히또",
+            "메가에이드",
+            "레몬차",
+            "사과유자차",
+            "케모마일차",
+            "녹차",
+            "얼그레이",
+            "자몽차"
+        ]
+        print(original_predicted_sentence)
+        if original_predicted_sentence == "추천해줘":
+            selection = data[random.randint(0, len(data))]
+            beverage_kind_str = selection
+            self.beverage_kind.append(beverage_kind_str)
+            return f"네 {beverage_kind_str} 몇잔드릴까요?"
+        else:
+            beverage_kind_str = original_predicted_sentence.split(' 줄래?')[0]
+            self.beverage_kind.append(beverage_kind_str)
+            return 3
 
     def beverage_amount_flag_4(self, original_predicted_sentence: str) -> None: # This function can be entered only flag val is '6'
         beverage_amount_str = original_predicted_sentence.split(' 줘')[0]
