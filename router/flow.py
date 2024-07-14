@@ -176,7 +176,7 @@ class FlowFlagStore:
             "자몽차"
         ]
         if original_predicted_sentence == "추천해줘":
-            selection = data[random.randint(0, len(data))]
+            selection = data[random.randint(0, len(data) - 1)]
             beverage_kind_str = selection
             self.beverage_kind.append(beverage_kind_str)
             return f"네 {beverage_kind_str} 몇잔드릴까요?"

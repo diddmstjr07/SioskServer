@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer, util
 import sys
 import os
 from auto.clear_terminal import clear_terminal
-from .flow import FlowFlagStore
+from ..router.flow import FlowFlagStore
 import json
 import time
 from tqdm import tqdm
@@ -10,8 +10,6 @@ import random
 import threading
 import itertools
 import router.download as download
-from router.outer_api_gemini import CallingGemini
-
 
 class LoadingIndicator:
     def __init__(self, message="\033[1;32mINFO\033[0m:     Dataset Loading Starting"):
@@ -45,7 +43,6 @@ class SentenceCompare:
         model_name = 'snunlp/KR-SBERT-V40K-klueNLI-augSTS'
         self.sentences = []
         self.sentences_A = []
-        self.callinggemini = CallingGemini()
         self.flag = FlowFlagStore()
         self.model = SentenceTransformer(model_name, cache_folder=self.cache_folder)
         with open('conversation.json', 'r', encoding='utf-8') as file:
@@ -133,28 +130,15 @@ class SentenceCompare:
             time.sleep(5)
             return False
         
-    def checking_using_outer_api(self, similarities_list, index_max_val, single_sentence):
-        max_comparison_val = similarities_list[index_max_val]
-        if max_comparison_val > 0.7:
-            return True
-        else:
-            answer = self.callinggemini.creating_response(single_sentence)
-            return answer
         
-    def compare(self, similarities_list, single_sentence):
+    def compare(self, similarities_list):
         max_val = max(similarities_list)
         index_max_val = list(similarities_list).index(max_val)
-        checkpoint = self.checking_using_outer_api(similarities_list, index_max_val, single_sentence)
-        if type(checkpoint) == str:
-            print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Question looks Non related with Ordering")
-            print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Predicted Script data '{single_sentence}'")
-            print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{checkpoint}'")
-            return single_sentence, checkpoint, False
-        elif type(checkpoint) == bool:
-            print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Predicted Script data '{self.sentences[index_max_val]}'")
-            print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{self.sentences_A[index_max_val]}'")
-            # print(similarities_list)
-            return self.sentences[index_max_val], self.sentences_A[index_max_val], True
+        min_val = similarities_list[index_max_val]
+        print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Predicted Script data '{self.sentences[index_max_val]}'")
+        print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{self.sentences_A[index_max_val]}'")
+        # print(similarities_list)
+        return self.sentences[index_max_val], self.sentences_A[index_max_val], min_val
 
     def process(self, ques):
         single_sentence = ques
@@ -164,20 +148,17 @@ class SentenceCompare:
         similarities_list = similarities.squeeze().tolist()
         # import pdb
         # pdb.set_trace()
-        predicted_Q, predicted_A, Hint = self.compare(similarities_list, single_sentence)
-        if Hint == True:
-            modified_A = self.flag.flag_handler(predicted_Q, predicted_A)
-            if modified_A == 0:
-                pass
-            elif modified_A == -1:
-                return False, False, False
-            else:
-                predicted_A = modified_A
-        elif Hint == False:
+        predicted_Q, predicted_A, min_val  = self.compare(similarities_list)
+        modified_A = self.flag.flag_handler(predicted_Q, predicted_A)
+        if modified_A == 0:
             pass
+        elif modified_A == -1:
+            pass
+        else:
+            predicted_A = modified_A
         end = time.time()
         print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Embedded Time: {str(end - start)}\n")
-        return predicted_Q, predicted_A, end - start
+        return min_val
     
     def Airing(self):
         self.quality_check() # Random Data Airing
@@ -185,5 +166,5 @@ class SentenceCompare:
         os.system(clear_terminal())
             
     def run(self, ques):
-        predicted_Q, predicted_A, embedded_time = self.process(ques)
-        return predicted_Q, predicted_A, embedded_time
+        min_val = self.process(ques)
+        return min_val
