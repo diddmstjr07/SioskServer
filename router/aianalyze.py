@@ -9,6 +9,7 @@ from tqdm import tqdm
 import random
 import threading
 import itertools
+import router.download as download
 
 
 class LoadingIndicator:
@@ -17,6 +18,8 @@ class LoadingIndicator:
         self.message = message
         self.spinner = itertools.cycle(['|', '/', '-', '\\'])
         self.thread = threading.Thread(target=self.animate)
+        save_dir = os.getcwd() # Conversation.json이 있는지 확인하고 없으면 서버에서 다운로드
+        download.download_file(file="conversation.json", save_dir=save_dir) # Conversation.json이 있는지 확인하고 없으면 서버에서 다운로드
 
     def animate(self):
         while not self.done:

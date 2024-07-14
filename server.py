@@ -5,9 +5,11 @@ from router.aianalyze import SentenceCompare
 from router.connection import thread_read_token
 from router.kill import KillProcess
 import os
+import warnings
 
 app = FastAPI()
 run = SentenceCompare() # This must not exceed the json data amounts also json data must divided by amount of thread
+warnings.simplefilter("ignore")
 run.Airing()
 
 app.add_middleware(
@@ -35,7 +37,7 @@ async def read_root(api_key: str = Depends(get_api_key), ques: str = None):
     predicted_Q, predicted_A, embedded_time = run.run(ques)
     if predicted_A == False:
         os._exit(0)
-    return {"message": f"{predicted_A}"}
+    return {"message": predicted_Q + " | " + predicted_A}
 
 @app.get("/access")
 async def read_root(api_key: str = Depends(get_api_key), host: str = None, ip: str = None):
