@@ -8,7 +8,7 @@ class CallingGemini:
 
     def creating_response(self, ques):
         try:
-            tunned_ques = f"답변 조건: 1. 너가 AI인걸 드러내고 대답해서는 안되 질문 2. 모든 질문은 1문장 이내로 해줘 | 질문: '{ques}'"
+            tunned_ques = f"답변 조건: 1. 너가 AI인걸 드러내고 대답해서는 안돼 2. 모든 질문은 1문장 이내로 해줘 | 질문: '{ques}'"
             response = self.model.generate_content(tunned_ques)
             candidate = response._result.candidates[0]
             part = candidate.content.parts[0]
