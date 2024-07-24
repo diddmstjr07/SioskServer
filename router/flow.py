@@ -1,5 +1,6 @@
 import json
 import random
+from router.download import download_file
 
 """
 지금든 생각인데, flag 별로 말할수 있는 비교군을 만들어서 데이터를 aianalyze.py에 넣어둘까? 
@@ -50,7 +51,7 @@ class FlowFlagStore:
         self.beverage_temperature = []
 
     def flag_handler(self, original_predicted_sentence, predicted_answer_sentence) -> str:
-        
+        download_file(file="conversation.json", save_dir='./')
         with open('conversation.json', 'r', encoding='utf-8') as file:
             unfiltered_sentences = json.load(file)
         for unfiltered_index, unfiltered_val in enumerate(unfiltered_sentences):
@@ -58,7 +59,7 @@ class FlowFlagStore:
                 flag = str(unfiltered_val).split(" | ")[2]
                 result = self.flag_detecter(int(flag))
                 result_sentence = self.A_modifier(result, original_predicted_sentence, predicted_answer_sentence)
-                print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Flag Stored curret data: {str(self.flag_store)}")
+                print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Flag Stored current data: {str(self.flag_store)}")
                 print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Flag Connection Sentences curret data: {str(self.beverage_kind + self.beverage_amount + self.beverage_temperature)}")
                 return result_sentence
 
@@ -133,11 +134,7 @@ class FlowFlagStore:
             self.beverage_cancel_flag_6(predicted_answer_sentence)
             return 0
         elif result == 7: # 정상적으로 값처리가 완료되었으면 flag가 6인 경우에만 result가 int형으로 반환되어짐
-            return_sentence = self.beverage_order_final_flag_7(predicted_answer_sentence) # beverage_order_final_flag_7 보내주기
-            self.beverage_kind = [] # 정상적으로 모든 process들이 완료되었다면, 배열을 초기화
-            self.beverage_amount = [] # "
-            self.beverage_temperature = [] # "
-            return return_sentence # 이것들은 서버로 return
+            return predicted_answer_sentence # 이것들은 서버로 return
         
     def beverage_kind_flag_3(self, original_predicted_sentence: str) -> None: # This function can be entered only flag val is '6'
         data = [
@@ -216,5 +213,10 @@ class FlowFlagStore:
             menu = str(self.beverage_temperature[final_index]) + " " + str(final_val) + " " + str(self.beverage_amount[final_index]) + ", "
             return_result_sentence += menu
         orginal_final_ans = str(predicted_answer_sentence).split('결제가 완료되었습니다.')
+        print(orginal_final_ans)
+        print(return_result_sentence)
         return_sentence = orginal_final_ans[0] + return_result_sentence + "결제가 완료되었습니다" + orginal_final_ans[1]
         return return_sentence
+    
+    def flag_store_share_func(self):
+        return self.flag_store

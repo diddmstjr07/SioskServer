@@ -43,19 +43,64 @@ class SentenceCompare:
         loading.start()
         self.cache_folder = './database'
         model_name = 'snunlp/KR-SBERT-V40K-klueNLI-augSTS'
-        self.sentences = []
+        '''
+        flag에 따라서 배열로 conversation.json 파일을 나누고, __init__
+        에서 데이터 로드를 진행하여, tensor 값들을 배열에 나열하는 역할을함
+        '''
+        self.sentences = [] # 배열을 로드
         self.sentences_A = []
         self.flagment = []
+        self.sentences_train = [] # 배열을 로드
+        self.sentences_A_train = []
+        self.flagment_train = []
+        self.sentences_4 = []
+        self.sentences_A_4 = []
+        self.flagment_4 = []
+        self.sentences_5 = []
+        self.sentences_A_5 = []
+        self.flagment_5 = []
+        self.sentences_6 = []
+        self.sentences_A_6 = []
+        self.flagment_6 = []
+        self.sentences_7 = []
+        self.sentences_A_7 = []
+        self.flagment_7 = []
         self.callinggemini = CallingGemini()
-        self.flag = FlowFlagStore()
+        self.flag = FlowFlagStore() # Flag를 저장하는 class 로드및 class variant로 load하기
         self.model = SentenceTransformer(model_name, cache_folder=self.cache_folder)
         with open('conversation.json', 'r', encoding='utf-8') as file:
             unfiltered_sentences = json.load(file)
             for unfiltered_sentences_index, unfiltered_sentences_val in enumerate(unfiltered_sentences):
-                self.sentences.append(str(unfiltered_sentences_val).split(' | ')[0])
-                self.sentences_A.append(str(unfiltered_sentences_val).split(' | ')[1])
-                self.flagment.append(str(unfiltered_sentences_val).split(' | ')[2])
-        self.sentences_embeddings = self.model.encode(self.sentences, convert_to_tensor=True)
+                self.sentences_train.append(str(unfiltered_sentences_val).split(' | ')[0]) # flag에 따하서 append해주기 -> 4부터 7까지 0 ~ 3까지는 한가지 배열로 넣어두기
+                self.sentences_A_train.append(str(unfiltered_sentences_val).split(' | ')[1])
+                self.flagment_train.append(str(unfiltered_sentences_val).split(' | ')[2])
+                flagment = str(unfiltered_sentences_val).split(' | ')[2]
+                if flagment == '4':
+                    self.sentences_4.append(str(unfiltered_sentences_val).split(' | ')[0]) # flag에 따하서 append해주기 -> 4부터 7까지 0 ~ 3까지는 한가지 배열로 넣어두기
+                    self.sentences_A_4.append(str(unfiltered_sentences_val).split(' | ')[1])
+                    self.flagment_4.append(str(unfiltered_sentences_val).split(' | ')[2])
+                elif flagment == '5':
+                    self.sentences_5.append(str(unfiltered_sentences_val).split(' | ')[0])
+                    self.sentences_A_5.append(str(unfiltered_sentences_val).split(' | ')[1])
+                    self.flagment_5.append(str(unfiltered_sentences_val).split(' | ')[2])
+                elif flagment == '6':
+                    self.sentences_6.append(str(unfiltered_sentences_val).split(' | ')[0])
+                    self.sentences_A_6.append(str(unfiltered_sentences_val).split(' | ')[1])
+                    self.flagment_6.append(str(unfiltered_sentences_val).split(' | ')[2])
+                elif flagment == '7' or flagment == '0' or flagment == '1' or flagment == '2' or flagment == '3':
+                    self.sentences_7.append(str(unfiltered_sentences_val).split(' | ')[0])
+                    self.sentences_A_7.append(str(unfiltered_sentences_val).split(' | ')[1])
+                    self.flagment_7.append(str(unfiltered_sentences_val).split(' | ')[2])
+                    if flagment != '7':
+                        self.sentences.append(str(unfiltered_sentences_val).split(' | ')[0])
+                        self.sentences_A.append(str(unfiltered_sentences_val).split(' | ')[1])
+                        self.flagment.append(str(unfiltered_sentences_val).split(' | ')[2])
+        self.sentences_embeddings_all = self.model.encode(self.sentences_train, convert_to_tensor=True) # encoding하기
+        self.sentences_embeddings = self.model.encode(self.sentences, convert_to_tensor=True) 
+        self.sentences_embeddings_4 = self.model.encode(self.sentences_4, convert_to_tensor=True)
+        self.sentences_embeddings_5 = self.model.encode(self.sentences_5, convert_to_tensor=True)
+        self.sentences_embeddings_6 = self.model.encode(self.sentences_6, convert_to_tensor=True)
+        self.sentences_embeddings_7 = self.model.encode(self.sentences_7, convert_to_tensor=True)
         loading.stop()
         print("\033[1;32m" + "INFO" + "\033[0m" + ":" + f"     Dataset Loading Finished..\n")
 
@@ -89,7 +134,7 @@ class SentenceCompare:
         for qualityindex, qualityvalue in enumerate(random_data):
             compare_embedding_st = time.time()
             single_embedding = self.model.encode(qualityvalue, convert_to_tensor=True)
-            similarities = util.pytorch_cos_sim(single_embedding, self.sentences_embeddings)
+            similarities = util.pytorch_cos_sim(single_embedding, self.sentences_embeddings_all)
             compare_embedding_en = time.time()
             compare_embedded_time.append(compare_embedding_en - compare_embedding_st)
             print("\033[1;32m" + "INFO" + "\033[0m" + ":" + f"     Airing target '{qualityvalue}'")
@@ -122,7 +167,7 @@ class SentenceCompare:
             # import pdb
             # pdb.set_trace()
             single_embedding = self.model.encode(str(qualityvalue).split(' | ')[0], convert_to_tensor=True)
-            similarities = util.pytorch_cos_sim(single_embedding, self.sentences_embeddings)
+            similarities = util.pytorch_cos_sim(single_embedding, self.sentences_embeddings_all)
             compare_embedding_en = time.time()
             compare_embedded_time.append(compare_embedding_en - compare_embedding_st)
             print("\033[1;32m" + "INFO" + "\033[0m" + ":" + f"     Main Airing target '{str(qualityvalue).split(' | ')[0]}'")
@@ -143,7 +188,15 @@ class SentenceCompare:
             answer = self.callinggemini.creating_response(single_sentence)
             return answer
         
-    def compare(self, similarities_list, single_sentence):
+    def compare(self, similarities_list, single_sentence, last_flag):
+        if last_flag >= 3:
+            sentences = getattr(self, f"sentences_{last_flag + 1}") # 변수 생성한후 변수에 저장하기
+            sentences_A = getattr(self, f"sentences_A_{last_flag + 1}") # "
+            flagment = getattr(self, f"flagment_{last_flag + 1}") # "
+        else:
+            sentences = self.sentences
+            sentences_A = self.sentences_A
+            flagment = self.flagment
         max_val = max(similarities_list)
         index_max_val = list(similarities_list).index(max_val)
         checkpoint = self.checking_using_outer_api(similarities_list, index_max_val, single_sentence)
@@ -153,23 +206,34 @@ class SentenceCompare:
             print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{checkpoint}'")
             return single_sentence, checkpoint, False
         elif type(checkpoint) == bool:
-            print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Predicted Script data '{self.sentences[index_max_val]}'")
-            print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{self.sentences_A[index_max_val]}'")
+            print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Predicted Script data '{sentences[index_max_val]}'")
+            print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{sentences_A[index_max_val]}'")
             # print(similarities_list)
-            return self.sentences[index_max_val], self.sentences_A[index_max_val], True, self.flagment[index_max_val]
+            return sentences[index_max_val], sentences_A[index_max_val], True, flagment[index_max_val]
 
     def process(self, ques):
+        current_flag_array = self.flag.flag_store_share_func()
+        if len(current_flag_array) != 0:
+            last_flag = int(current_flag_array[-1]) # 지금까지의 flag 배열들 받아오기
+        else:
+            last_flag = 0
         single_sentence = ques
         start = time.time()
-        single_embedding = self.model.encode(single_sentence, convert_to_tensor=True)
-        similarities = util.pytorch_cos_sim(single_embedding, self.sentences_embeddings)
+        if last_flag < 3:
+            single_embedding = self.model.encode(single_sentence, convert_to_tensor=True) # single qeustion들 encode
+            similarities = util.pytorch_cos_sim(single_embedding, self.sentences_embeddings) # 유사도 검사하기
+        else:
+            renewal_flag = f"sentences_embeddings_{last_flag + 1}" # flag renewal하기 -> 변수 생성하기
+            val = getattr(self, renewal_flag) # 변수화하기
+            single_embedding = self.model.encode(single_sentence, convert_to_tensor=True) # encode하기
+            similarities = util.pytorch_cos_sim(single_embedding, val) # cos_sim 구현하기
         similarities_list = similarities.squeeze().tolist()
         # import pdb
         # pdb.set_trace()
         try:
-            predicted_Q, predicted_A, Hint, flag = self.compare(similarities_list, single_sentence)
+            predicted_Q, predicted_A, Hint, flag = self.compare(similarities_list, single_sentence, last_flag) # compare로 유사도, 일반 문장, 마지막 flag 전송하기 
         except ValueError:
-            predicted_Q, predicted_A, Hint = self.compare(similarities_list, single_sentence)
+            predicted_Q, predicted_A, Hint = self.compare(similarities_list, single_sentence, last_flag)
             flag = "Gemini"
         if Hint == True:
             modified_A = self.flag.flag_handler(predicted_Q, predicted_A)
@@ -193,3 +257,10 @@ class SentenceCompare:
     def run(self, ques):
         predicted_Q, predicted_A, embedded_time, flag = self.process(ques)
         return predicted_Q, predicted_A, embedded_time, flag # flag gemini 처리
+    
+
+'''
+아이디어 구상 지금은 전체를 모두 scan해서 가장 유사성있는 데이터를 뽑아네지만, 추출할수 있는 데이터에 제한을 둔다면?
+더 상황에 맞는 데이터들을 뽑아낼수 있겠지? 그럼 그걸 목표로써 한번 데이터를 filtering해서 그 데이터로 conversation_filtered.json
+데이터를 제작하고, 그것 중에서 가장 유사성 높은 데이터를 추출하는 알고리즘으로 변경하자. 
+'''
