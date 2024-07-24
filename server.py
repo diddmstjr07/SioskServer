@@ -34,10 +34,10 @@ def get_api_key(request: Request):
 
 @app.get("/api")
 async def read_root(api_key: str = Depends(get_api_key), ques: str = None):
-    predicted_Q, predicted_A, embedded_time = run.run(ques)
+    predicted_Q, predicted_A, embedded_time, flag = run.run(ques)
     if predicted_A == False:
         os._exit(0)
-    return {"message": predicted_Q + " | " + predicted_A}
+    return {"message": predicted_Q + " | " + predicted_A + " | " + flag}
 
 @app.get("/access")
 async def read_root(api_key: str = Depends(get_api_key), host: str = None, ip: str = None):

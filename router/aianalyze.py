@@ -45,6 +45,7 @@ class SentenceCompare:
         model_name = 'snunlp/KR-SBERT-V40K-klueNLI-augSTS'
         self.sentences = []
         self.sentences_A = []
+        self.flagment = []
         self.callinggemini = CallingGemini()
         self.flag = FlowFlagStore()
         self.model = SentenceTransformer(model_name, cache_folder=self.cache_folder)
@@ -53,6 +54,7 @@ class SentenceCompare:
             for unfiltered_sentences_index, unfiltered_sentences_val in enumerate(unfiltered_sentences):
                 self.sentences.append(str(unfiltered_sentences_val).split(' | ')[0])
                 self.sentences_A.append(str(unfiltered_sentences_val).split(' | ')[1])
+                self.flagment.append(str(unfiltered_sentences_val).split(' | ')[2])
         self.sentences_embeddings = self.model.encode(self.sentences, convert_to_tensor=True)
         loading.stop()
         print("\033[1;32m" + "INFO" + "\033[0m" + ":" + f"     Dataset Loading Finished..\n")
@@ -154,7 +156,7 @@ class SentenceCompare:
             print("\033[33m" + "\nLOG" + "\033[0m" + ":" + f"     Predicted Script data '{self.sentences[index_max_val]}'")
             print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Predicted Script answer '{self.sentences_A[index_max_val]}'")
             # print(similarities_list)
-            return self.sentences[index_max_val], self.sentences_A[index_max_val], True
+            return self.sentences[index_max_val], self.sentences_A[index_max_val], True, self.flagment[index_max_val]
 
     def process(self, ques):
         single_sentence = ques
@@ -164,7 +166,11 @@ class SentenceCompare:
         similarities_list = similarities.squeeze().tolist()
         # import pdb
         # pdb.set_trace()
-        predicted_Q, predicted_A, Hint = self.compare(similarities_list, single_sentence)
+        try:
+            predicted_Q, predicted_A, Hint, flag = self.compare(similarities_list, single_sentence)
+        except ValueError:
+            predicted_Q, predicted_A, Hint = self.compare(similarities_list, single_sentence)
+            flag = "Gemini"
         if Hint == True:
             modified_A = self.flag.flag_handler(predicted_Q, predicted_A)
             if modified_A == 0:
@@ -177,7 +183,7 @@ class SentenceCompare:
             pass
         end = time.time()
         print("\033[33m" + "LOG" + "\033[0m" + ":" + f"     Embedded Time: {str(end - start)}\n")
-        return predicted_Q, predicted_A, end - start
+        return predicted_Q, predicted_A, end - start, flag
     
     def Airing(self):
         self.quality_check() # Random Data Airing
@@ -185,5 +191,5 @@ class SentenceCompare:
         os.system(clear_terminal())
             
     def run(self, ques):
-        predicted_Q, predicted_A, embedded_time = self.process(ques)
-        return predicted_Q, predicted_A, embedded_time
+        predicted_Q, predicted_A, embedded_time, flag = self.process(ques)
+        return predicted_Q, predicted_A, embedded_time, flag # flag gemini 처리
