@@ -134,6 +134,7 @@ class FlowFlagStore:
             self.beverage_cancel_flag_6(predicted_answer_sentence)
             return 0
         elif result == 7: # 정상적으로 값처리가 완료되었으면 flag가 6인 경우에만 result가 int형으로 반환되어짐
+            self.flag_store.clear()
             return predicted_answer_sentence # 이것들은 서버로 return
         
     def beverage_kind_flag_3(self, original_predicted_sentence: str) -> None: # This function can be entered only flag val is '6'
