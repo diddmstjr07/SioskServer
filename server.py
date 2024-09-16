@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEY_NAME = "token"
+API_KEY_NAME = "token" 
 
 def get_api_key(request: Request):
     api_key = request.query_params.get(API_KEY_NAME)
