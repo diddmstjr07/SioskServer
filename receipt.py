@@ -13,7 +13,7 @@ class connection:
         resized_image = image.resize((max_width, new_height), Image.LANCZOS)
         return resized_image
 
-    def calculate_total_price(self, price_list, amounts):
+    def calculate_total_price(self, price_list: str, amounts):
         print(price_list)
         print(amounts)
         total = 0
