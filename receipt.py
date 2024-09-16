@@ -19,7 +19,7 @@ class connection:
         total = 0
         for i in range(len(price_list)):
             # 문자열에서 숫자 부분만 추출
-            price = int(price_list[i][:-1].replace(',', ''))
+            price = int(price_list[i][:-1].replace(',', '')) 
             amount = int(amounts[i])
             print(price, amount)
             total += price * amount
